@@ -11,6 +11,7 @@ import rospy
 import random
 import moveit_commander
 import moveit_msgs.msg
+from moveit_commander import MoveGroupCommander
 from moveit_msgs.srv import SetPlannerParams
 from moveit_msgs.srv import GetStateValidity
 from moveit_msgs.srv import GetStateValidityRequest
@@ -20,6 +21,7 @@ from sensor_msgs.msg import JointState
 import rosgraph_msgs.msg
 import matplotlib.pyplot as plt
 import geometry_msgs.msg
+import numpy as np
 
 
 #####################################################################################
@@ -78,7 +80,8 @@ class Benchmark:
         self.planningTimeList = []
         self.pathLengthList = []
         self.pathDurationList = []
-
+        self.currentAlgo = []
+        self.fail_count = {}
         # Will be set to True if a collision is detected.
         # See __callbackGetLog() for more details.
         self.collisionFound = False
@@ -138,6 +141,8 @@ class Benchmark:
         rospy.sleep(1)
 
         configNumber = 0
+        for planner in self.benchmarkSettings.plannerList:
+            self.fail_count[planner.name] = 0
         while configNumber < self.benchmarkSettings.numberOfConfiguration:
 
             print("")
@@ -163,8 +168,23 @@ class Benchmark:
             # TODO:          time (see the maximum planning time setting)
             # TODO:        - the plan causes a collision
 
-            # Clear target pose.
-            self.moveGroup.clear_pose_targets()
+            for planner in self.benchmarkSettings.plannerList:
+                for j in range(self.benchmarkSettings.numberOfPlan):
+                    self.moveGroup.set_planner_id(planner.name)
+                    # c = self.moveGroup.go()
+                    # self.moveGroup.stop()
+                    p = self.moveGroup.plan()
+                    traj = p.joint_trajectory
+                    if len(traj.points) == 0 or self.collisionFound:
+                        print("wrong plan ", planner.name)
+                        self.fail_count[planner.name] += 1
+                        continue
+                    self.pathLengthList.append(self.__computePathLength(p))
+                    duration = traj.points[-1].time_from_start
+                    self.pathDurationList.append(duration.nsecs * 10e-9 + duration.secs)
+                    self.currentAlgo.append(planner.name)
+                    # Clear target pose.
+                    self.moveGroup.clear_pose_targets()
 
             # Clear the environment
             self.scene.remove_world_object()
@@ -183,8 +203,32 @@ class Benchmark:
         # TODO:  benchmark algorithm, generate relevant plots and figures.
         # TODO:  You can use the Matplotlib library (which is already imported)
         # TODO:  or any other plotting library compatible with Python 2.7.
+        data = {}
 
-        pass # <- Remove this line
+        for planner in self.benchmarkSettings.plannerList:
+            algo = planner.name
+            data[algo] = {"duration": [], "length": [], "planning": []}
+            for i in range(len(self.currentAlgo)):
+                if self.currentAlgo[i] == algo:
+                    data[algo]["duration"].append(self.pathDurationList[i])
+                    data[algo]["length"].append(self.pathLengthList[i])
+                    data[algo]["planning"].append(self.planningTimeList[i])
+
+            print(algo, self.fail_count[algo])
+            fig1, ax1 = plt.subplots()
+            for variable in ["duration", "length", "planning"]:
+                y = data[algo][variable]
+                if len(y) == 0:
+                    continue
+                # ax1.plot(range(len(y)), y)
+                bx = ax1.boxplot(y)
+                array = np.array(y)
+                print(variable, array.mean(), array.std())
+                ax1.set_title(algo + " " + variable)
+                ax1.show()
+        plt.show()
+
+        pass  # <- Remove this line
 
     # -------------------------------------------------------------------------------
     # __generateObstacles
@@ -206,13 +250,13 @@ class Benchmark:
                 # We must keep a clearance of 1,5 unit radius around the starting position where no
                 # obstacle will spawn. This is to ensure that the robot is not in collision
                 # at his starting position. Same thing for the goal position.
-                distanceStart = math.sqrt((pose.pose.position.x + 5.0)**2 + (pose.pose.position.y + 5.0)**2)
-                distanceGoal= math.sqrt((pose.pose.position.x - 5.0)**2 + (pose.pose.position.y - 5.0)**2)
+                distanceStart = math.sqrt((pose.pose.position.x + 5.0) ** 2 + (pose.pose.position.y + 5.0) ** 2)
+                distanceGoal = math.sqrt((pose.pose.position.x - 5.0) ** 2 + (pose.pose.position.y - 5.0) ** 2)
 
                 if distanceStart >= 1.5 and distanceGoal >= 1.5:
                     positionValid = True
 
-            self.scene.add_box("block"+str(i), pose, (1.0, 1.0, 2))
+            self.scene.add_box("block" + str(i), pose, (1.0, 1.0, 2))
 
     # -------------------------------------------------------------------------------
     # __computePathLength
@@ -226,7 +270,10 @@ class Benchmark:
 
         # TODO:  Using the *plan* object, compute the length of the plan's path.
         # TODO:  Use the euclidean distance.
-
+        points = plan.joint_trajectory.points
+        for i in range(len(points) - 1):
+            sub_list = [(x - y) ** 2 for (x, y) in zip(points[i].positions, points[i + 1].positions)]
+            pathLength += math.sqrt(sum(sub_list))
         return pathLength
 
     # -------------------------------------------------------------------------------
@@ -242,8 +289,8 @@ class Benchmark:
         # TODO:  If the planning was successful, get the planning time and add it to the
         # TODO:  *self.planningTimeList* list. If the planning has failed, do not record
         # TODO:  the planning time.
-
-        pass  # <- Remove this line
+        if data.status.SUCCEEDED == data.status.status:
+            self.planningTimeList.append(data.result.planning_time)
 
     # -------------------------------------------------------------------------------
     # __callbackGetLog
@@ -276,12 +323,16 @@ if __name__ == '__main__':
         # TODO:  Configure each planner that you want to test (see the *Planner* class).
         # TODO:  Add each planner to the *BenchmarkSettings* object planner list
         # TODO:  by calling *settings.plannerList.append()*.
+        for algo in ["RRTkConfigDefault", "RRTConnectkConfigDefault", "PRMkConfigDefault", "ESTkConfigDefault"]:
+            p = Planner()
+            p.name = algo
+            settings.plannerList.append(p)
 
         # Default settings for the benchmark algorithm.
         # See the *BenchmarkSettings* class for more details.
         # You should change these values to ensure that you record enough data.
-        settings.numberOfConfiguration = 15
-        settings.numberOfPlan = 10
+        settings.numberOfConfiguration = 2
+        settings.numberOfPlan = 2
         settings.maximumPlanningTime = 5.0
         settings.numberOfObstacle = 5
 

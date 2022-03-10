@@ -90,7 +90,7 @@ class Move(Action):
 
         # We use a large goal tolerance for the move action. We want the robot to move
         # approximately to the designated X and Y coordinates.
-        self.moveGroup.set_goal_tolerance(0.95)
+        self.moveGroup.set_goal_tolerance(0.75)
 
         plan = self.moveGroup.plan()
 
@@ -201,6 +201,72 @@ class DropBall(Action):
         else:
             return False
 
+
+#####################################################################################
+# CLASS: KickBall                                                                   #
+# Kick a ball action. The robot kicks the ball at the current position.              #
+#####################################################################################
+class KickBall(Action):
+    def __init__(self, moveGroup, ball,direction):
+        Action.__init__(self, moveGroup)
+        self.ball = ball
+        self.dir = direction * math.pi
+        obj = scene.get_objects([self.ball.name])
+        self.obj_x = obj[self.ball.name].primitive_poses[0].position.x
+        self.obj_y = obj[self.ball.name].primitive_poses[0].position.y
+
+    def execute(self):
+        global CURRENT_PR2_BALL
+        global CURRENT_PR2_ROOM
+
+        print("== kickBall(" + self.ball.name + ")")
+
+        if not self.__isPreconditionValid():
+            raise InvalidAction
+
+        #moveGroup.detach_object(self.ball.name)
+        
+        
+        
+        
+        targetJointValue = {"base_footprint_joint_rev": self.dir,
+                            "base_footprint_joint_x": self.obj_x),
+                            "base_footprint_joint_y": self.obj_y)}
+
+        self.moveGroup.set_joint_value_target(targetJointValue)
+
+        # Since we want the robot to move exactly at the calculated position,
+        # we set the goal tolerance to 0.
+        self.moveGroup.set_goal_tolerance(0.0)
+        
+        plan = self.moveGroup.plan()
+
+        if isPlanValid(plan):
+            self.moveGroup.execute(plan)
+            CURRENT_PR2_BALL = None
+            
+            ballPose = geometry_msgs.msg.PoseStamped()
+            ballPose.header.frame_id = moveGroup.get_planning_frame()
+            ballPose.pose.position.x = self.obj_x + 2*math.cos(self.dir+math.pi)
+            ballPose.pose.position.y = self.obj_y + 2*math.sin(self.dir+math.pi)
+            ballPose.pose.position.z = BALL_RADIUS
+            scene.add_sphere("ball1", ballPose1, BALL_RADIUS)
+            
+            
+            print("== kickBall completed")
+        else:
+            print("== kickBall FAILED")
+            raise InvalidPlan
+
+
+    def __isPreconditionValid(self):
+        #scene.get_known_object_names_in_roi (pos min, pos max)
+        global CURRENT_PR2_BALL
+        return True
+        if CURRENT_PR2_BALL is self.ball:
+            return True
+        else:
+            return False
 
 #####################################################################################
 # FUNCTIONS                                                                         #
@@ -350,7 +416,6 @@ def generateEnvironment(scene, moveGroup):
 # -------------------------------------------------------------------------------
 def isPlanValid(plan):
     # A valid plan will contains a trajectory.
-    #remove_world_objectss
     if not plan.joint_trajectory.points:
         return False
     else:
