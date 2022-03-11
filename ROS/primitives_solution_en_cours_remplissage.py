@@ -210,7 +210,7 @@ class KickBall(Action):
     def __init__(self, moveGroup, ball,direction):
         Action.__init__(self, moveGroup)
         self.ball = ball
-        self.dir = direction * math.pi
+        self.dir = direction 
         obj = scene.get_objects([self.ball.name])
         self.obj_x = obj[self.ball.name].primitive_poses[0].position.x
         self.obj_y = obj[self.ball.name].primitive_poses[0].position.y
@@ -224,33 +224,44 @@ class KickBall(Action):
         if not self.__isPreconditionValid():
             raise InvalidAction
 
-        #moveGroup.detach_object(self.ball.name)
+        base_joint_values = self.moveGroup.get_current_joint_values()
+        base_y = base_joint_values[0]
+        base_x = base_joint_values[1]
+        
+        
+        distance = (BALL_RADIUS + PR2_RADIUS)
         
         
         
-        
-        targetJointValue = {"base_footprint_joint_rev": self.dir,
-                            "base_footprint_joint_x": self.obj_x),
-                            "base_footprint_joint_y": self.obj_y)}
+        if self.dir>0:
+            angle = - math.pi + self.dir
+        else:
+            angle =  math.pi + self.dir
+            
+        targetJointValue = {"base_footprint_joint_rev": angle,
+                            "base_footprint_joint_x": self.obj_x  + (distance * math.cos(self.dir)),
+                            "base_footprint_joint_y": self.obj_y  + (distance * math.sin(self.dir)) }
 
         self.moveGroup.set_joint_value_target(targetJointValue)
 
         # Since we want the robot to move exactly at the calculated position,
         # we set the goal tolerance to 0.
-        self.moveGroup.set_goal_tolerance(0.0)
+        self.moveGroup.set_goal_tolerance(0.1)
         
         plan = self.moveGroup.plan()
 
         if isPlanValid(plan):
             self.moveGroup.execute(plan)
-            CURRENT_PR2_BALL = None
-            
+            if CURRENT_PR2_BALL == self.ball:
+                CURRENT_PR2_BALL = None
+                
+            moveGroup.detach_object(self.ball.name)
             ballPose = geometry_msgs.msg.PoseStamped()
             ballPose.header.frame_id = moveGroup.get_planning_frame()
             ballPose.pose.position.x = self.obj_x + 2*math.cos(self.dir+math.pi)
             ballPose.pose.position.y = self.obj_y + 2*math.sin(self.dir+math.pi)
             ballPose.pose.position.z = BALL_RADIUS
-            scene.add_sphere("ball1", ballPose1, BALL_RADIUS)
+            scene.add_sphere(self.ball.name, ballPose, BALL_RADIUS)
             
             
             print("== kickBall completed")
@@ -260,7 +271,11 @@ class KickBall(Action):
 
 
     def __isPreconditionValid(self):
-        #scene.get_known_object_names_in_roi (pos min, pos max)
+        pos_x = self.obj_x + 2*math.cos(self.dir+math.pi)
+        pos_y = self.obj_y + 2*math.sin(self.dir+math.pi)
+        contact = scene.get_known_object_names_in_roi(self.obj_x,self.obj_y, pos_x,pos_y)
+        if len(content) != 0:
+            return False
         global CURRENT_PR2_BALL
         return True
         if CURRENT_PR2_BALL is self.ball:
@@ -477,33 +492,33 @@ if __name__ == '__main__':
         # These action will cause the robot to bring all the balls to the center room.
         actions = []
 
-        actions.append(Move(moveGroup, room1))
-        actions.append(PickBall(moveGroup, ball1))
-        actions.append(Move(moveGroup, room0))
-        actions.append(DropBall(moveGroup, ball1))
-
         actions.append(Move(moveGroup, room5))
-        actions.append(PickBall(moveGroup, ball5))
-        actions.append(Move(moveGroup, room0))
-        actions.append(DropBall(moveGroup, ball5))
+        #actions.append(PickBall(moveGroup, ball1))
+        #actions.append(Move(moveGroup, room0))
+        #actions.append(DropBall(moveGroup, ball1))
 
-        actions.append(Move(moveGroup, room2))
-        actions.append(PickBall(moveGroup, ball2))
-        actions.append(Move(moveGroup, room0))
-        actions.append(DropBall(moveGroup, ball2))
+        #actions.append(Move(moveGroup, room5))
+        #actions.append(PickBall(moveGroup, ball5))
+        #actions.append(Move(moveGroup, room0))
+        #actions.append(DropBall(moveGroup, ball5))
 
-        actions.append(Move(moveGroup, room3))
-        actions.append(PickBall(moveGroup, ball3))
-        actions.append(Move(moveGroup, room0))
-        actions.append(DropBall(moveGroup, ball3))
+        #actions.append(Move(moveGroup, room2))
+        #actions.append(PickBall(moveGroup, ball2))
+        #actions.append(Move(moveGroup, room0))
+        #actions.append(DropBall(moveGroup, ball2))
 
-        actions.append(Move(moveGroup, room4))
-        actions.append(PickBall(moveGroup, ball4))
-        actions.append(Move(moveGroup, room0))
-        actions.append(DropBall(moveGroup, ball4))
+        #actions.append(Move(moveGroup, room3))
+        #actions.append(PickBall(moveGroup, ball3))
+        #actions.append(Move(moveGroup, room0))
+        #actions.append(DropBall(moveGroup, ball3))
 
-        actions.append(Move(moveGroup, room6))
+        #actions.append(Move(moveGroup, room4))
+        #actions.append(PickBall(moveGroup, ball4))
+        #actions.append(Move(moveGroup, room0))
+        #actions.append(DropBall(moveGroup, ball4))
 
+        #actions.append(Move(moveGroup, room6))
+        actions.append(KickBall(moveGroup, ball5,math.pi / 4))
         # Execute the list of actions.
         for action in actions:
             try:
