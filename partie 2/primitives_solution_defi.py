@@ -91,7 +91,7 @@ class Move(Action):
         # We use a large goal tolerance for the move action. We want the robot to move
         # approximately to the designated X and Y coordinates.
         #self.moveGroup.set_goal_tolerance(0.5)
-        self.moveGroup.set_goal_tolerance(0.95)
+        self.moveGroup.set_goal_tolerance(0.25)
 
 
         plan = self.moveGroup.plan()
@@ -260,11 +260,14 @@ class DropBall(Action):
 
         self.moveGroup.set_joint_value_target(targetdetach)
 
+        self.moveGroup.set_goal_tolerance(0.2)
+
         planDescendre = self.moveGroup.plan()
 
 
         if isPlanValid(planDescendre):
 
+            
             self.moveGroup.execute(planDescendre)
 
             print(self.moveGroup.get_current_joint_values()[15])
@@ -497,7 +500,18 @@ if __name__ == '__main__':
         # Wait for the environment to display.
         rospy.sleep(1)
 
+        room01 = Room("room01", 1.0, 1.0)
         room0 = Room("room0", 0.0, 0.0)
+
+        room02 = Room("room02", -1.0, 1.0)
+        room03 = Room("room03", 1.0, -1.0)
+        room04 = Room("room04", -1.0, -1.0)
+
+
+
+
+
+
         room1 = Room("room1", 4.0, 3.0)
         room2 = Room("room2", -4.0, 3.0)
         room3 = Room("room3", 4.0, -3.0)
@@ -521,7 +535,7 @@ if __name__ == '__main__':
         #actions.append(PickBall(moveGroup, ball1,moveGroup2))
         actions.append(PickBall(moveGroup, ball1))
 
-        actions.append(Move(moveGroup, room0))
+        actions.append(Move(moveGroup, room01))
         actions.append(DropBall(moveGroup, ball1))
 
         actions.append(Move(moveGroup, room5))
@@ -531,17 +545,17 @@ if __name__ == '__main__':
 
         actions.append(Move(moveGroup, room2))
         actions.append(PickBall(moveGroup, ball2))
-        actions.append(Move(moveGroup, room0))
+        actions.append(Move(moveGroup, room02))
         actions.append(DropBall(moveGroup, ball2))
 
         actions.append(Move(moveGroup, room3))
         actions.append(PickBall(moveGroup, ball3))
-        actions.append(Move(moveGroup, room0))
+        actions.append(Move(moveGroup, room03))
         actions.append(DropBall(moveGroup, ball3))
 
         actions.append(Move(moveGroup, room4))
         actions.append(PickBall(moveGroup, ball4))
-        actions.append(Move(moveGroup, room0))
+        actions.append(Move(moveGroup, room04))
         actions.append(DropBall(moveGroup, ball4))
 
         actions.append(Move(moveGroup, room6))
