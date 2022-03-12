@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(1.1.3)
+project(pr2_moveit_base2)
 
 find_package(catkin REQUIRED)
 
