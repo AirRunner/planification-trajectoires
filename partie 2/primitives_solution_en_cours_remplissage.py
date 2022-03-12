@@ -258,9 +258,13 @@ class KickBall(Action):
             moveGroup.detach_object(self.ball.name)
             ballPose = geometry_msgs.msg.PoseStamped()
             ballPose.header.frame_id = moveGroup.get_planning_frame()
-            ballPose.pose.position.x = self.obj_x + 2*math.cos(self.dir+math.pi)
-            ballPose.pose.position.y = self.obj_y + 2*math.sin(self.dir+math.pi)
+            # Inertie du mouvement augmente la force a 2.5
+            ballPose.pose.position.x = self.obj_x + 2.5*math.cos(self.dir+math.pi)
+            ballPose.pose.position.y = self.obj_y + 2.5*math.sin(self.dir+math.pi)
             ballPose.pose.position.z = BALL_RADIUS
+
+            print("Position de la balle \n  x : {0} | y : {1} | z : {2} ".format(round(ballPose.pose.position.x,1),ballPose.pose.position.y,ballPose.pose.position.z))
+
             scene.add_sphere(self.ball.name, ballPose, BALL_RADIUS)
             
             
@@ -273,8 +277,8 @@ class KickBall(Action):
     def __isPreconditionValid(self):
         pos_x = self.obj_x + 2*math.cos(self.dir+math.pi)
         pos_y = self.obj_y + 2*math.sin(self.dir+math.pi)
-        contact = scene.get_known_object_names_in_roi(self.obj_x,self.obj_y, pos_x,pos_y)
-        if len(content) != 0:
+        contact = scene.get_known_object_names_in_roi(self.obj_x,self.obj_y,0, pos_x,pos_y,BALL_RADIUS)
+        if len(contact) != 0:
             return False
         global CURRENT_PR2_BALL
         return True
@@ -492,33 +496,42 @@ if __name__ == '__main__':
         # These action will cause the robot to bring all the balls to the center room.
         actions = []
 
-        actions.append(Move(moveGroup, room5))
-        #actions.append(PickBall(moveGroup, ball1))
-        #actions.append(Move(moveGroup, room0))
-        #actions.append(DropBall(moveGroup, ball1))
 
-        #actions.append(Move(moveGroup, room5))
+
+        # On choisit de ne shooter que pour la salle 5 car on économise ainsi deux action (move,kick)
+        # Pour les salles 1 a 4, on fait un déplacement 'classique' (move,pick,move,drop)
+        # C'est aussi efficace que de faire avec 2 kick, mais plus simple a implementer
+
+        actions.append(Move(moveGroup, room1))
+        actions.append(PickBall(moveGroup, ball1))
+        actions.append(Move(moveGroup, room0))
+        actions.append(DropBall(moveGroup, ball1))
+
+        actions.append(Move(moveGroup, room5))
+
+        actions.append(KickBall(moveGroup,ball5,math.pi/2))
+
         #actions.append(PickBall(moveGroup, ball5))
         #actions.append(Move(moveGroup, room0))
         #actions.append(DropBall(moveGroup, ball5))
 
-        #actions.append(Move(moveGroup, room2))
-        #actions.append(PickBall(moveGroup, ball2))
-        #actions.append(Move(moveGroup, room0))
-        #actions.append(DropBall(moveGroup, ball2))
+        actions.append(Move(moveGroup, room2))
+        actions.append(PickBall(moveGroup, ball2))
+        actions.append(Move(moveGroup, room0))
+        actions.append(DropBall(moveGroup, ball2))
 
-        #actions.append(Move(moveGroup, room3))
-        #actions.append(PickBall(moveGroup, ball3))
-        #actions.append(Move(moveGroup, room0))
-        #actions.append(DropBall(moveGroup, ball3))
+        actions.append(Move(moveGroup, room3))
+        actions.append(PickBall(moveGroup, ball3))
+        actions.append(Move(moveGroup, room0))
+        actions.append(DropBall(moveGroup, ball3))
 
-        #actions.append(Move(moveGroup, room4))
-        #actions.append(PickBall(moveGroup, ball4))
-        #actions.append(Move(moveGroup, room0))
-        #actions.append(DropBall(moveGroup, ball4))
+        actions.append(Move(moveGroup, room4))
+        actions.append(PickBall(moveGroup, ball4))
+        actions.append(Move(moveGroup, room0))
+        actions.append(DropBall(moveGroup, ball4))
 
-        #actions.append(Move(moveGroup, room6))
-        actions.append(KickBall(moveGroup, ball5,math.pi / 4))
+        actions.append(Move(moveGroup, room6))
+        #actions.append(KickBall(moveGroup, ball5,math.pi / 4))
         # Execute the list of actions.
         for action in actions:
             try:
