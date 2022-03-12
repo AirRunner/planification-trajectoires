@@ -3,6 +3,7 @@ from std_msgs.msg import String
 from std_srvs.srv import Empty
 from rosplan_dispatch_msgs.srv import DispatchService
 from rosplan_dispatch_msgs.msg import ActionDispatch, ActionFeedback # EsterelPlan
+from rosplan_knowledge_msgs.srv import GetAttributeService
 
 
 rospy.init_node("node1")
@@ -13,10 +14,13 @@ rospy.loginfo('start')
 def callback(msg):
     print(msg)
 
+def callback_action(msg):
+    pass
+
 sub_plan = rospy.Subscriber("/rosplan_planner_interface/planner_output", String, callback)
 # sub_parse = rospy.Subscriber("/rosplan_planner_interface/plan_topic", EsterelPlan, callback)
-sub_dispatch = rospy.Subscriber("/rosplan_plan_dispatcher/action_dispatch", ActionDispatch, callback)
-sub_feedback = rospy.Subscriber("/rosplan_plan_dispatcher/action_feedback", ActionFeedback, callback)
+sub_dispatch = rospy.Subscriber("/rosplan_plan_dispatcher/action_dispatch", ActionDispatch, callback_action)
+sub_feedback = rospy.Subscriber("/rosplan_plan_dispatcher/action_feedback", ActionFeedback, callback_action)
 
 
 # Publishers
@@ -36,9 +40,14 @@ pi_res = planning()
 parser = rospy.ServiceProxy('/rosplan_parsing_interface/parse_plan', Empty)
 parse_res = parser()
 
-dispatcher = rospy.ServiceProxy('/rosplan_plan_dispatcher/dispatch_plan', DispatchService)
-disp_res = dispatcher()
 
+dispatcher = rospy.ServiceProxy('/rosplan_plan_dispatcher/dispatch_plan', DispatchService)
+if not dispatcher():
+    rospy.logerr("KCL: (%s) Cannot dispatch plan!" % rospy.get_name())
+
+
+state = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)
+world = state()
 
 # Listening loop
 rate = rospy.Rate(1)
