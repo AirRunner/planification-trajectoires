@@ -205,7 +205,11 @@ class Benchmark:
         # TODO:  or any other plotting library compatible with Python 2.7.
         data = {}
 
-        Tableau = [] 
+        TableauDuration = [] 
+        TableauLength = [] 
+        TableauPlanning= [] 
+        
+        dicoTab = {"duration"  : TableauDuration, "length":TableauLength, "planning":TableauPlanning}
 
 
         names_algos = [a.name for a in self.benchmarkSettings.plannerList]
@@ -241,14 +245,17 @@ class Benchmark:
         for variable in ["duration", "length", "planning"]:
                 data={}
 
-                Tableau.append([])
+
+                #dicoTab[variable].append([])
+                #Tableau.append([])
 
 
                 for planner in self.benchmarkSettings.plannerList:
 
 
 
-                    Tableau[-1].append([])
+                    #Tableau[-1].append([])
+                    dicoTab[variable].append([])
 
                     algo = planner.name
                     data[algo] = []
@@ -266,19 +273,25 @@ class Benchmark:
                     dataray = np.array(data[algo])
                     metrics = [ dataray.mean(), np.median(dataray), dataray.std(), dataray.min(), dataray.max()   ]
                     for k in range(len(metrics)):
-                        Tableau[-1][-1].append(metrics[k])
+                        #Tableau[-1][-1].append(metrics[k])
+                        dicoTab[variable][-1].append(metrics[k])
 
 
                 
 
 
-                fig=plt.figure(figsize=(20,20))
+                fig=plt.figure(figsize=(15,15))
+                ax = fig.add_subplot(111)
 
-                plt.boxplot([data[algname] for algname in names_algos], labels=names_algos )
 
-                plt.title("Boxplot de '" + variable+ "' avec "+ str(settings.numberOfConfiguration) +" configs / " + str(settings.numberOfPlan) + " plans / " + str(settings.maximumPlanningTime) + " Temps max et " +str(settings.numberOfObstacle) +" obstacles") 
+                ax.boxplot([data[algname] for algname in names_algos] )
+
+                ax.set_xticklabels(labels=names_algos, fontsize=15)
+
+
+                plt.title("Boxplot de '" + variable+ "' avec "+ str(settings.numberOfConfiguration) +" configs / " + str(settings.numberOfPlan) + " plans / " + str(settings.maximumPlanningTime) + " Temps max et " +str(settings.numberOfObstacle) +" obstacles", fontsize=25) 
                 
-
+                plt.savefig("{}.png".format(variable))
                 
                 plt.show()
         plt.show()
@@ -288,9 +301,14 @@ class Benchmark:
 
         print("----------------------------------")
 
-        print(Tableau)
+        print("dur")
+        print(TableauDuration)
+        print("length")
+        print(TableauLength)
+        print("tab")
+        print(TableauPlanning)
 
-        print(np.array(Tableau).shape  )
+        print(np.array(TableauPlanning).shape  )
         
 
 
@@ -395,10 +413,10 @@ if __name__ == '__main__':
         # Default settings for the benchmark algorithm.
         # See the *BenchmarkSettings* class for more details.
         # You should change these values to ensure that you record enough data.
-        settings.numberOfConfiguration = 2
-        settings.numberOfPlan = 2
-        settings.maximumPlanningTime = 5.0
-        settings.numberOfObstacle = 5
+        settings.numberOfConfiguration = 18
+        settings.numberOfPlan = 12
+        settings.maximumPlanningTime = 6.0
+        settings.numberOfObstacle = 4
 
         benchmark = Benchmark(settings)
         benchmark.run()

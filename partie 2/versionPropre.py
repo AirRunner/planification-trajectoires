@@ -5,6 +5,8 @@
 #####################################################################################
 import sys
 import math
+
+from numpy import False_
 import rospy
 import moveit_commander
 import geometry_msgs.msg
@@ -89,7 +91,7 @@ class Action:
 
         print("actual target")
         print(self.moveGroup.get_joint_value_target())
-        
+
         self.moveGroup.set_goal_tolerance(tolerance)
         self.plan = self.moveGroup.plan()
 
@@ -117,7 +119,7 @@ class Action:
             raise InvalidAction
         
     def get_robot_position(self):
-        return self.moveGroup.get_current_joint_values()
+        return self.moveGroup.get_current_joint_values()[:3]
     
     def get_object(self):
         obj_list = scene.get_objects([self.ball.name])
@@ -532,9 +534,18 @@ if __name__ == '__main__':
         # This object is an interface to the world surrounding the robot.
         scene = moveit_commander.PlanningSceneInterface()
 
+
+
+        HANDS = False
+
+
         # Instantiate a MoveGroupCommander object.
         # This enable us to generate plans for the selected planning group.
-        moveGroup = moveit_commander.MoveGroupCommander("base")
+
+        if HANDS:
+            moveGroup = moveit_commander.MoveGroupCommander("whole_body")
+        else:
+            moveGroup = moveit_commander.MoveGroupCommander("base")
 
         # Set the maximum amount of time to use when planning (in seconds).
         # If no plan is found before the time limit, the planning fails.
@@ -573,12 +584,55 @@ if __name__ == '__main__':
         actions = []
 
 
-        # actions.append(Move(moveGroup,room4))
-        # actions.append(KickBall(moveGroup, ball1, room0, False))
 
-        actions.append(Move(moveGroup,room1))
-        actions.append(PickBall(moveGroup,ball1))
-        actions.append(KickBall(moveGroup, ball1, room0, True))
+        if HANDS:
+            actions.append(Move(moveGroup,room1))
+            actions.append(PickBall(moveGroup,ball1))
+            actions.append(KickBall(moveGroup, ball1, room0, True))
+
+
+            actions.append(Move(moveGroup,room5))
+            actions.append(PickBall(moveGroup,ball5))
+            actions.append(KickBall(moveGroup, ball5, room0, True))
+
+            actions.append(Move(moveGroup,room2))
+            actions.append(PickBall(moveGroup,ball2))
+            actions.append(KickBall(moveGroup, ball2, room0, True))
+
+            actions.append(Move(moveGroup,room3))
+            actions.append(PickBall(moveGroup,ball3))
+            actions.append(KickBall(moveGroup, ball3, room0, True))
+
+            actions.append(Move(moveGroup,room4))
+            actions.append(PickBall(moveGroup,ball4))
+            actions.append(KickBall(moveGroup, ball4, room0, True))
+
+            actions.append(Move(moveGroup,room6))
+
+        else:
+
+            actions.append(Move(moveGroup,room1))
+            actions.append(KickBall(moveGroup, ball1, room0, False))
+
+
+            actions.append(Move(moveGroup,room5))
+            actions.append(KickBall(moveGroup, ball5, room0, False))
+
+            actions.append(Move(moveGroup,room2))
+            actions.append(KickBall(moveGroup, ball2, room0, False))
+
+            actions.append(Move(moveGroup,room3))
+            actions.append(KickBall(moveGroup, ball3, room0, False))
+
+            actions.append(Move(moveGroup,room4))
+            actions.append(KickBall(moveGroup, ball4, room0, False))
+
+            actions.append(Move(moveGroup,room6))
+
+
+
+
+
 
 
 
