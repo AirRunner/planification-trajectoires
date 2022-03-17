@@ -126,12 +126,12 @@ class Action:
         pos = obj_list[self.ball.name].primitive_poses[0].position
         return pos.x, pos.y
     
-    def add_ball_scene(self,x,y,name = "ball"):
+    def add_ball_scene(self,x,y,name = "ball", z = BALL_RADIUS):
         ballPose = geometry_msgs.msg.PoseStamped()
         ballPose.header.frame_id = moveGroup.get_planning_frame()
         ballPose.pose.position.x = x
         ballPose.pose.position.y = y
-        ballPose.pose.position.z = BALL_RADIUS
+        ballPose.pose.position.z = z
         scene.add_sphere(name, ballPose, BALL_RADIUS)
     
     
@@ -213,18 +213,19 @@ class PickBall(Action):
         
         
 
-        self.move_plan(angle,nr_x,nr_y,tolerance=0.1, dico = PickBall.pick_ball_pos)
-        
-
-
+        #self.move_plan(angle,nr_x,nr_y,tolerance=0.1, dico = PickBall.pick_ball_pos)
+        self.move_plan(angle,nr_x,nr_y,tolerance=0.1)
         self.execute_plan()
-        
+
+        self.add_ball_scene(b_x,b_y, name=self.ball.name, z = 3)
+        rospy.sleep(2)
+
         moveGroup.attach_object(self.ball.name, link_name= 'r_gripper_r_finger_link')
         CURRENT_PR2_BALL = self.ball
         
-        self.name = "raiseball"
-        self.set_target_join(PickBall.raise_ball_pos,tolerance = 0.1)
-        self.execute_plan()
+        # self.name = "raiseball"
+        # self.set_target_join(PickBall.raise_ball_pos,tolerance = 0.1)
+        # self.execute_plan()
         
         
         print(self.ball.name+ " attached to robot")
@@ -272,10 +273,14 @@ class DropBall(Action):
 
         self.valid_precondition()
         
-        self.set_target_join(DropBall.targetdetach)
-        self.execute_plan()
+        # self.set_target_join(DropBall.targetdetach)
+        # self.execute_plan()
 
         moveGroup.detach_object(self.ball.name)
+
+        rospy.sleep(2)
+        b_x, b_y = self.get_object()
+        self.add_ball_scene(b_x,b_y, name=self.ball.name)
         CURRENT_PR2_BALL = None
         self.ball.currentRoom = CURRENT_PR2_ROOM
 
@@ -348,8 +353,8 @@ class KickBall(Action):
 
         ballPose = geometry_msgs.msg.PoseStamped()
         ballPose.header.frame_id = moveGroup.get_planning_frame()
-        nbt_x = b_x + 2.5*math.cos(angle)
-        nbt_y = b_y + 2.5*math.sin(angle)
+        nbt_x = b_x + 3.5*math.cos(angle)
+        nbt_y = b_y + 3.5*math.sin(angle)
         self.add_ball_scene(nbt_x,nbt_y, name=self.ball.name)
         
         self.ball.currentRoom = self.room
@@ -509,6 +514,13 @@ def generateEnvironment(scene, moveGroup):
     ballPose5.pose.position.z = BALL_RADIUS 
     scene.add_sphere("ball5", ballPose5, BALL_RADIUS)
 
+    ballPose6 = geometry_msgs.msg.PoseStamped()
+    ballPose6.header.frame_id = moveGroup.get_planning_frame()
+    ballPose6.pose.position.x = 0.0
+    ballPose6.pose.position.y = -4.0
+    ballPose6.pose.position.z = BALL_RADIUS 
+    scene.add_sphere("ball6", ballPose6, BALL_RADIUS)
+
 # -------------------------------------------------------------------------------
 # isPlanValid
 #   Check if a plan is valid.
@@ -536,7 +548,7 @@ if __name__ == '__main__':
 
 
 
-        HANDS = True
+        HANDS = False
 
 
         # Instantiate a MoveGroupCommander object.
@@ -598,6 +610,8 @@ if __name__ == '__main__':
         ball3 = Ball("ball3", room3)
         ball4 = Ball("ball4", room4)
         ball5 = Ball("ball5", room5)
+        ball6 = Ball("ball6", room6)
+
 
         CURRENT_PR2_ROOM = room0
 
@@ -607,29 +621,69 @@ if __name__ == '__main__':
 
 
 
-        if HANDS:
+        if not HANDS:
+            
             actions.append(Move(moveGroup,room1))
-            actions.append(PickBall(moveGroup,ball1))
-            actions.append(KickBall(moveGroup, ball1, room0, True))
-
-
-            actions.append(Move(moveGroup,room5))
-            actions.append(PickBall(moveGroup,ball5))
-            actions.append(KickBall(moveGroup, ball5, room0, True))
-
-            actions.append(Move(moveGroup,room2))
-            actions.append(PickBall(moveGroup,ball2))
-            actions.append(KickBall(moveGroup, ball2, room0, True))
-
-            actions.append(Move(moveGroup,room3))
-            actions.append(PickBall(moveGroup,ball3))
-            actions.append(KickBall(moveGroup, ball3, room0, True))
+            actions.append(PickBall(moveGroup, ball1))
+            actions.append(Move(moveGroup, room0))
+            actions.append(DropBall(moveGroup, ball1))
 
             actions.append(Move(moveGroup,room4))
-            actions.append(PickBall(moveGroup,ball4))
-            actions.append(KickBall(moveGroup, ball4, room0, True))
+            actions.append(PickBall(moveGroup, ball4))
+            actions.append(Move(moveGroup, room0))
+            actions.append(KickBall(moveGroup, ball1, room4centre, False))
 
-            actions.append(Move(moveGroup,room6))
+            actions.append(KickBall(moveGroup, ball4, room1centre, True))
+            actions.append(Move(moveGroup,room3))
+            actions.append(PickBall(moveGroup, ball3))
+            actions.append(Move(moveGroup, room0))
+            actions.append(DropBall(moveGroup, ball3))
+
+            actions.append(Move(moveGroup, room2))
+            actions.append(PickBall(moveGroup, ball2))
+            actions.append(Move(moveGroup, room0))
+            actions.append(KickBall(moveGroup, ball3, room2centre, False))
+
+            actions.append(KickBall(moveGroup, ball2, room3centre, True))
+
+            actions.append(Move(moveGroup, room5))
+            actions.append(PickBall(moveGroup, ball5))
+            actions.append(Move(moveGroup, room6))
+            actions.append(KickBall(moveGroup, ball6, room0, False))
+
+            actions.append(DropBall(moveGroup, ball5))
+
+            actions.append(Move(moveGroup, room0))
+            actions.append(KickBall(moveGroup, ball6, room5, False))
+
+
+
+
+
+
+
+            # actions.append(Move(moveGroup,room1))
+            # actions.append(PickBall(moveGroup,ball1))
+            # actions.append(KickBall(moveGroup, ball1, room0, True))
+
+
+            # actions.append(Move(moveGroup,room5))
+            # actions.append(PickBall(moveGroup,ball5))
+            # actions.append(KickBall(moveGroup, ball5, room0, True))
+
+            # actions.append(Move(moveGroup,room2))
+            # actions.append(PickBall(moveGroup,ball2))
+            # actions.append(KickBall(moveGroup, ball2, room0, True))
+
+            # actions.append(Move(moveGroup,room3))
+            # actions.append(PickBall(moveGroup,ball3))
+            # actions.append(KickBall(moveGroup, ball3, room0, True))
+
+            # actions.append(Move(moveGroup,room4))
+            # actions.append(PickBall(moveGroup,ball4))
+            # actions.append(KickBall(moveGroup, ball4, room0, True))
+
+            # actions.append(Move(moveGroup,room6))
 
         else:
 
@@ -652,33 +706,41 @@ if __name__ == '__main__':
             # actions.append(Move(moveGroup,room6))
 
 
-            actions.append(Move(moveGroup,room1))
-            actions.append(KickBall(moveGroup, ball1, room1centre, False))
-            actions.append(Move(moveGroup,room1centre))
-            actions.append(KickBall(moveGroup, ball1, room0, False))
+            # -------
+
+            # actions.append(Move(moveGroup,room1))
+            # actions.append(KickBall(moveGroup, ball1, room1centre, False))
+            # actions.append(Move(moveGroup,room1centre))
+            # actions.append(KickBall(moveGroup, ball1, room0, False))
 
 
-            actions.append(Move(moveGroup,room5))
-            actions.append(KickBall(moveGroup, ball5, room0, False))
+            # actions.append(Move(moveGroup,room5))
+            # actions.append(KickBall(moveGroup, ball5, room0, False))
 
-            actions.append(Move(moveGroup,room2))
-            actions.append(KickBall(moveGroup, ball2, room2centre, False))
-            actions.append(Move(moveGroup,room2centre))
-            actions.append(KickBall(moveGroup, ball2, room0, False))
+            # actions.append(Move(moveGroup,room2))
+            # actions.append(KickBall(moveGroup, ball2, room2centre, False))
+            # actions.append(Move(moveGroup,room2centre))
+            # actions.append(KickBall(moveGroup, ball2, room0, False))
 
 
 
-            actions.append(Move(moveGroup,room3))
-            actions.append(KickBall(moveGroup, ball3, room3centre, False))
-            actions.append(Move(moveGroup,room3centre))
-            actions.append(KickBall(moveGroup, ball3, room0, False))
+            # actions.append(Move(moveGroup,room3))
+            # actions.append(KickBall(moveGroup, ball3, room3centre, False))
+            # actions.append(Move(moveGroup,room3centre))
+            # actions.append(KickBall(moveGroup, ball3, room0, False))
 
-            actions.append(Move(moveGroup,room4))
-            actions.append(KickBall(moveGroup, ball4, room4centre, False))
-            actions.append(Move(moveGroup,room4centre))
-            actions.append(KickBall(moveGroup, ball4, room0, False))
+            # actions.append(Move(moveGroup,room4))
+            # actions.append(KickBall(moveGroup, ball4, room4centre, False))
+            # actions.append(Move(moveGroup,room4centre))
+            # actions.append(KickBall(moveGroup, ball4, room0, False))
 
-            actions.append(Move(moveGroup,room6))
+            # actions.append(Move(moveGroup,room6))
+
+            # ------
+
+            pass
+
+
 
 
 
@@ -714,17 +776,19 @@ if __name__ == '__main__':
         #actions.append(KickBall(moveGroup, ball3,1.57, room2))
         # Execute the list of actions.
 
-        i=0
+        i=-1
         while(i<len(actions)):
 
             try:
-                actions[i].execute()
                 i+=1
+                actions[i].execute()
+                rospy.sleep(1)
+                
             except InvalidPlan:
-                Move(moveGroup,CURRENT_PR2_ROOM)
+                #Move(moveGroup,CURRENT_PR2_ROOM)
                 #action.execute()
                 print("Action failed: Failed to find a plan or the plan is invalid.")
-                #break
+                break
             except InvalidAction:
                 print("Action failed: Precondition is not respected")
                 break
