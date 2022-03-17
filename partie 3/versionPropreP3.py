@@ -479,35 +479,42 @@ def generateEnvironment(scene, moveGroup):
     ballPose1.pose.position.x = 4.0
     ballPose1.pose.position.y = 4.0
     ballPose1.pose.position.z = BALL_RADIUS 
-    scene.add_sphere("ball1", ballPose1, BALL_RADIUS)
+    scene.add_sphere("b1", ballPose1, BALL_RADIUS)
 
     ballPose2 = geometry_msgs.msg.PoseStamped()
     ballPose2.header.frame_id = moveGroup.get_planning_frame()
     ballPose2.pose.position.x = -4.0
     ballPose2.pose.position.y = 4.0
     ballPose2.pose.position.z = BALL_RADIUS 
-    scene.add_sphere("ball2", ballPose2, BALL_RADIUS)
+    scene.add_sphere("b2", ballPose2, BALL_RADIUS)
 
     ballPose3 = geometry_msgs.msg.PoseStamped()
     ballPose3.header.frame_id = moveGroup.get_planning_frame()
     ballPose3.pose.position.x = 4.0
-    ballPose3.pose.position.y = -4.0
+    ballPose3.pose.position.y = 0.0
     ballPose3.pose.position.z = BALL_RADIUS 
-    scene.add_sphere("ball3", ballPose3, BALL_RADIUS)
+    scene.add_sphere("b3", ballPose3, BALL_RADIUS)
 
     ballPose4 = geometry_msgs.msg.PoseStamped()
     ballPose4.header.frame_id = moveGroup.get_planning_frame()
     ballPose4.pose.position.x = -4.0
-    ballPose4.pose.position.y = -4.0
+    ballPose4.pose.position.y = 0.0
     ballPose4.pose.position.z = BALL_RADIUS 
-    scene.add_sphere("ball4", ballPose4, BALL_RADIUS)
+    scene.add_sphere("b4", ballPose4, BALL_RADIUS)
 
     ballPose5 = geometry_msgs.msg.PoseStamped()
     ballPose5.header.frame_id = moveGroup.get_planning_frame()
-    ballPose5.pose.position.x = 0.0
-    ballPose5.pose.position.y = 4.0
+    ballPose5.pose.position.x = 4.0
+    ballPose5.pose.position.y = -4.0
     ballPose5.pose.position.z = BALL_RADIUS 
-    scene.add_sphere("ball5", ballPose5, BALL_RADIUS)
+    scene.add_sphere("b5", ballPose5, BALL_RADIUS)
+
+    ballPose6 = geometry_msgs.msg.PoseStamped()
+    ballPose6.header.frame_id = moveGroup.get_planning_frame()
+    ballPose6.pose.position.x = -4.0
+    ballPose6.pose.position.y = -4.0
+    ballPose6.pose.position.z = BALL_RADIUS 
+    scene.add_sphere("b6", ballPose6, BALL_RADIUS)
 
 # -------------------------------------------------------------------------------
 # isPlanValid
@@ -529,12 +536,12 @@ from rosplan_knowledge_msgs.srv import GetAttributeService
 
 
 # PDDL conversion
-def pddl_to_rosplan(pddl_action, moveGroup):
-    if pddl_action[0] == "move": return Move(moveGroup, pddl_action[2])
-    elif pddl_action[0] == "pick_ball": return PickBall(moveGroup, pddl_action[2])
-    elif pddl_action[0] == "drop_ball": return DropBall(moveGroup, pddl_action[2])
-    elif pddl_action[0] == "kick_hand": return KickBall(moveGroup, pddl_action[2], pddl_action[3])
-    elif pddl_action[0] == "kick_ground": return KickBall(moveGroup, pddl_action[2], pddl_action[3], hand=False)
+def pddl_to_rosplan(pddl_action, moveGroup, rooms, balls):
+    if pddl_action[0] == "move": return Move(moveGroup, rooms[pddl_action[2]])
+    elif pddl_action[0] == "pick_ball": return PickBall(moveGroup, balls[pddl_action[1]])
+    elif pddl_action[0] == "drop_ball": return DropBall(moveGroup, balls[pddl_action[1]])
+    elif pddl_action[0] == "kick_hand": return KickBall(moveGroup, balls[pddl_action[3]], rooms[pddl_action[2]])
+    elif pddl_action[0] == "kick_ground": return KickBall(moveGroup, balls[pddl_action[3]], rooms[pddl_action[2]], hand=False)
 
     return None
 
@@ -545,7 +552,7 @@ def callback(msg):
     print(msg)
     print("-- End plan --")
 
-def dispatch(msg, moveGroup):
+def dispatch(msg, moveGroup, rooms, balls):
     res = list()
     res.append(msg.name)
 
@@ -553,7 +560,7 @@ def dispatch(msg, moveGroup):
         res.append(param.value)
     
     print("Executing action (" + ' '.join(res) + ')')
-    action = pddl_to_rosplan(res, moveGroup)
+    action = pddl_to_rosplan(res, moveGroup, rooms, balls)
     if action is not None:
         action.execute()
 
@@ -617,25 +624,34 @@ if __name__ == '__main__':
         
         rospy.sleep(1)
 
-        room0 = Room("room0", 0.0, 0.0)
-        room1 = Room("room1", 4.0, 3.0)
-        room2 = Room("room2", -4.0, 3.0)
-        room3 = Room("room3", 4.0, -3.0)
-        room4 = Room("room4", -4.0, -3.0)
-        room5 = Room("room5", 0.0, 3.0)
-        room6 = Room("room6", 0.0, -3.0)
+        rooms = {
+            "r1_l": Room("r1_l", 4.0, 3.0),
+            "r1_r": Room("r1_r", 3.5, 1.25),
+            "r2_r": Room("r2_r", 4.0, -3.0),
+            "r2_l": Room("r2_l", 3.5, -1.25),
+            "r3": Room("r3", 0.0, 3.0),
+            "r4": Room("r4", 0.0, 0.0),
+            "r5": Room("r5", 0.0, -3.0),
+            "r6_l": Room("r6_l", -4.0, 3.0),
+            "r6_r": Room("r6_r", -3.5, 1.25),
+            "r7_r": Room("r7_r", -4.0, -3.0),
+            "r7_l": Room("r7_l", -3.5, -1.25)
+        }
 
-        ball1 = Ball("ball1", room1)
-        ball2 = Ball("ball2", room2)
-        ball3 = Ball("ball3", room3)
-        ball4 = Ball("ball4", room4)
-        ball5 = Ball("ball5", room5)
+        balls = {
+            "b1": Ball("b1", rooms["r1_l"]),
+            "b2": Ball("b2", rooms["r2_r"]),
+            "b3": Ball("b3", rooms["r3"]),
+            "b4": Ball("b4", rooms["r5"]),
+            "b5": Ball("b5", rooms["r6_l"]),
+            "b6": Ball("b6", rooms["r7_r"])
+        }
 
-        CURRENT_PR2_ROOM = room0
+        CURRENT_PR2_ROOM = rooms["r4"]
 
 
         ## ROSPlan server calls
-        callback_dispatch = lambda msg: dispatch(msg, moveGroup)
+        callback_dispatch = lambda msg: dispatch(msg, moveGroup, rooms, balls)
 
         sub_plan = rospy.Subscriber("/rosplan_planner_interface/planner_output", String, callback)
         sub_dispatch = rospy.Subscriber("/rosplan_plan_dispatcher/action_dispatch", ActionDispatch, callback_dispatch)
