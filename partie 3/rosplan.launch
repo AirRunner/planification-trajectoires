@@ -1,47 +1,24 @@
+<?xml version="1.0"?>
 <launch>
-    
-    <!-- arguments -->
-    <arg name="node_name"            default="rosplan_planner_interface" />
-    <arg name="use_problem_topic"    default="true" />
-    <arg name="problem_topic"        default="/rosplan_problem_interface/problem_instance" />
-    <arg name="planner_topic"        default="planner_output" />
-    <arg name="domain_path"          default="/home/ros/catkin_ws/src/ROSPlan/rosplan_ift702/common/domain.pddl" />
-    <arg name="problem_path"         default="/home/ros/catkin_ws/src/ROSPlan/rosplan_ift702/common/problem.pddl" />
-    <arg name="data_path"            default="/home/ros/catkin_ws/src/ROSPlan/rosplan_ift702/common/" />
-    <arg name="planner_command"      default="timeout 10 $(find rosplan_planning_system)/common/bin/Contingent-FF DOMAIN PROBLEM" />
-    <arg name="planner_interface"    default="popf_planner_interface" />
-    
-    <!-- planner interface -->
-    <node name="$(arg node_name)" pkg="rosplan_planning_system" type="$(arg planner_interface)" respawn="false" output="screen">
-        <param name="use_problem_topic" value="$(arg use_problem_topic)" />
-        
-        <param name="problem_topic" value="$(arg problem_topic)" />
-        <param name="planner_topic" value="$(arg planner_topic)" />
-        
-        <param name="domain_path" value="$(arg domain_path)" />
-        <param name="problem_path" value="$(arg problem_path)" />
-        <param name="data_path" value="$(arg data_path)" />
-        
-        <param name="planner_command" value="$(arg planner_command)" />
-        
-    </node>
-    
-    
-    <!-- sim actions -->
-    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-        <arg name="pddl_action_name" value="move" />
-    </include>
-    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-        <arg name="pddl_action_name" value="pick_ball" />
-    </include>
-    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-        <arg name="pddl_action_name" value="drop_ball" />
-    </include>
-    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-        <arg name="pddl_action_name" value="kick_hand" />
-    </include>
-    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-        <arg name="pddl_action_name" value="kick_ground" />
-    </include>
-    
+
+	<!-- ROSPlan -->
+	<include file="$(find rosplan_planning_system)/launch/interfaced_planning_system.launch" >
+		<arg name="domain_path"	 default="/home/ros/catkin_ws/src/ROSPlan/rosplan_demos/common/domain_turtlebot.pddl" />
+	    <arg name="problem_path" default="/home/ros/catkin_ws/src/ROSPlan/rosplan_demos/common/problem_turtlebot.pddl" />
+	</include>
+
+	<!-- sim actions -->
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="undock" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="dock" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="localise" />
+	</include>
+	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+		<arg name="pddl_action_name" value="goto_waypoint" />
+	</include>
 </launch>
+
