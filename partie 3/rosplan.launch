@@ -1,24 +1,31 @@
 <?xml version="1.0"?>
 <launch>
-
-	<!-- ROSPlan -->
-	<include file="$(find rosplan_planning_system)/launch/interfaced_planning_system.launch" >
-		<arg name="domain_path"	 default="/home/ros/catkin_ws/src/ROSPlan/rosplan_demos/common/domain_turtlebot.pddl" />
-	    <arg name="problem_path" default="/home/ros/catkin_ws/src/ROSPlan/rosplan_demos/common/problem_turtlebot.pddl" />
+    
+    <!-- arguments -->
+    <arg name="domain_path"          default="/home/ros/catkin_ws/src/ROSPlan/rosplan_ift702/common/domain.pddl" />
+    <arg name="problem_path"         default="/home/ros/catkin_ws/src/ROSPlan/rosplan_ift702/common/problem.pddl" />
+    
+    <!-- problem generation -->
+	<include file="$(find rosplan_planning_system)/launch/interfaced_planning_system.launch">
+		<arg name="domain_path"      value="$(arg domain_path)" />
+		<arg name="problem_path"     value="$(arg problem_path)" />
 	</include>
-
-	<!-- sim actions -->
-	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-		<arg name="pddl_action_name" value="undock" />
-	</include>
-	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-		<arg name="pddl_action_name" value="dock" />
-	</include>
-	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-		<arg name="pddl_action_name" value="localise" />
-	</include>
-	<include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
-		<arg name="pddl_action_name" value="goto_waypoint" />
-	</include>
+    
+    <!-- sim actions -->
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="move" />
+    </include>
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="pick_ball" />
+    </include>
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="drop_ball" />
+    </include>
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="kick_hand" />
+    </include>
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="kick_ground" />
+    </include>
+    
 </launch>
-
